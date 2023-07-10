@@ -41,6 +41,7 @@ INSTALLED_APPS = [
 
     #myapps
     'account',
+    'todo_app'
 ]
 
 MIDDLEWARE = [
