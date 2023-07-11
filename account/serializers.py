@@ -1,3 +1,4 @@
+from django.contrib.auth import authenticate
 from rest_framework import serializers
 from django.contrib.auth.models import User
 
@@ -26,6 +27,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = User.objects.create(**validated_data)
+        user.set_password(validated_data['password'])
         user.save()
         return user
 
@@ -33,3 +35,39 @@ class UserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = '__all__'
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField()
+
+    def validate(self, data):
+        request = self.context.get('request')
+        username = data.get('username')
+        password = data.get('password')
+        if username and password:
+            user = authenticate(username=username,
+                                password=password,
+                                request=request,)
+            if not user:
+                raise serializers.ValidationError(
+                    'invalid username or password'
+                )
+        else:
+            raise serializers.ValidationError(
+                'username and password must be filled in'
+            )
+        data['user'] = user
+        return data
+
+    def validate_username(self, username):
+        print(username)
+        if not User.objects.filter(username=username).exists():
+            raise  serializers.ValidationError(
+                'username is not found'
+            )
+        return username
+
+class UserDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        exclude = ('password',)
