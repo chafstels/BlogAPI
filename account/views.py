@@ -2,7 +2,8 @@ from django.shortcuts import render
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import generics
+from rest_framework import generics, mixins
+from rest_framework.viewsets import GenericViewSet
 from account.serializers import RegisterSerializer, UserListSerializer, LoginSerializer, UserDetailSerializer
 from django.contrib.auth.models import User
 from rest_framework.authtoken.views import ObtainAuthToken
@@ -52,3 +53,20 @@ class UserDetailView(generics.RetrieveAPIView):
     serializer_class = UserDetailSerializer
     lookup_field = 'id'
     permission_classes = [IsAdminUser]
+
+class CustomViewSet(mixins.RetrieveModelMixin,
+                    mixins.ListModelMixin,
+                    GenericViewSet):
+    pass
+
+class UserViewSet(CustomViewSet):
+    queryset = User.objects.all()
+
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return UserDetailSerializer
+        return UserListSerializer
+    def get_permissions(self):
+        if self.request.method == 'retrieve':
+            return [IsAdminUser()]
+        return [IsAuthenticated()]
