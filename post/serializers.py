@@ -1,18 +1,23 @@
 from rest_framework import serializers
 from .models import Post, PostImages
 from category.models import Category
+from like.serializers import LikeSerializer
 
 
 class PostImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostImages
         fields = '__all__'
+
+
 class PostListSerializer(serializers.ModelSerializer):
     category_name = serializers.ReadOnlyField(source='category.name')
     owner_username = serializers.ReadOnlyField(source='owner.username')
+
     class Meta:
         model = Post
         fields = ('id', 'title', 'owner', 'category', 'preview', 'owner_username', 'category_name')
+
 
 class PostCreateSerializer(serializers.ModelSerializer):
     category = serializers.PrimaryKeyRelatedField(
@@ -32,10 +37,21 @@ class PostCreateSerializer(serializers.ModelSerializer):
             PostImages.objects.create(images=image, post=post)
         return post
 
+
 class PostDetailSerializer(serializers.ModelSerializer):
     owner_username = serializers.ReadOnlyField(source='owner.username')
     category_name = serializers.ReadOnlyField(source='category.name')
     images = PostImageSerializer(many=True)
+
     class Meta:
         model = Post
         fields = '__all__'
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['likes'] = LikeSerializer(instance.likes.all(), many=True).data
+        representation['quantity of likes'] = 0
+        for _ in representation['likes']:
+            representation['quantity of likes'] += 1
+
+        return representation
