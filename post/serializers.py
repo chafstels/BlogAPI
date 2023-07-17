@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Post, PostImages
 from category.models import Category
 from like.serializers import LikeSerializer
+from comment.serializers import CommentSerializer
 
 
 class PostImageSerializer(serializers.ModelSerializer):
@@ -47,11 +48,29 @@ class PostDetailSerializer(serializers.ModelSerializer):
         model = Post
         fields = '__all__'
 
+    @staticmethod
+    def is_liked(post, user):
+        return user.likes.filter(post=post).exists()
+
+    @staticmethod
+    def is_favorite(post, user):
+        return user.favorites.filter(post=post).exists()
+
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         representation['likes'] = LikeSerializer(instance.likes.all(), many=True).data
         representation['quantity of likes'] = 0
         for _ in representation['likes']:
             representation['quantity of likes'] += 1
+        representation['comment_count'] = instance.comments.count()
+        representation['comments'] = CommentSerializer(
+            instance.comments.all(), many=True
+        ).data
+        user = self.context['request'].user
+        if user.is_authenticated:
+            representation['is_liked'] = self.is_liked(instance, user)
+            representation['is_favorite'] = self.is_favorite(instance, user)
 
         return representation
+
+

@@ -48,7 +48,8 @@ INSTALLED_APPS = [
     'todo_app',
     'category',
     'post',
-    'like'
+    'like',
+    'comment'
 ]
 
 MIDDLEWARE = [
